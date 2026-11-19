@@ -1,6 +1,6 @@
 {
   "name": "mahjong-soul-lovense",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "Lovense integration for Mahjong Soul (Steam client): reads the game from the screen and makes your toy react, plus optional Twitch viewer triggers.",
   "type": "module",
   "private": true,

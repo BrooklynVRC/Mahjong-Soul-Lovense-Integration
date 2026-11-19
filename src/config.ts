@@ -55,6 +55,8 @@ export const DEFAULT_CONFIG = {
     my_pon: rule(true, act('vibrate', 5, 2)),
     my_chi: rule(true, act('vibrate', 4, 2)),
     my_kan: rule(true, act('preset', 10, 3, { preset: 'pulse' })),
+    my_kita: rule(true, act('vibrate', 5, 2)),
+    opponent_kita: rule(false, act('vibrate', 2, 1)),
     opponent_call: rule(false, act('vibrate', 2, 1)),
     my_win_ron: rule(true, act('preset', 14, 5, { preset: 'fireworks' })),
     my_win_tsumo: rule(true, act('preset', 16, 6, { preset: 'earthquake' })),
