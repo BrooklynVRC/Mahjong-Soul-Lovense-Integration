@@ -1,6 +1,6 @@
 # Mahjong Soul × Lovense
 
-Makes a Lovense toy react to your Mahjong Soul games. It can also react to Twitch viewers through the separate **mahjong-soul-twitch** app.
+Makes a Lovense toy react to your Mahjong Soul games. It can also react to Twitch viewers through the separate [Mahjong Soul Twitch Integration](https://github.com/BrooklynVRC/Mahjong-Soul-Twitch-Integration) app.
 
 > 🔞 For adults only. Use with consenting adults, and follow the rules of any platform you stream on. On Twitch, sexual content is not allowed, so keep the toy off-camera and out of the stream.
 
