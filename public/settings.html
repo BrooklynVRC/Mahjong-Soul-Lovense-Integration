@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mahjong Soul × Lovense</title>
+<style>
+  :root { --bg:#131116; --card:#1e1a22; --line:#322a38; --text:#eee8f0; --muted:#a59cad; --accent:#ff5c9a; --ok:#4fc98a; --bad:#ff6b6b; }
+  * { box-sizing: border-box; }
+  body { margin:0; font:15px/1.45 "Segoe UI", system-ui, sans-serif; background:var(--bg); color:var(--text); }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px 120px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } h2 { font-size: 16px; margin: 0 0 12px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .status { display:grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+  .stat { background:#17141a; border-radius:8px; padding:10px 12px; } .stat b { display:block; font-size:12px; color:var(--muted); font-weight:500; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; background:var(--bad); } .dot.on { background:var(--ok); }
+  button { background:#2d2733; color:var(--text); border:1px solid #42394a; border-radius:7px; padding:7px 12px; font:inherit; cursor:pointer; }
+  button:hover { border-color: var(--accent); }
+  .primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .stop { background:#d93838; border-color:#d93838; color:#fff; font-weight:800; font-size:18px; padding:10px 28px; letter-spacing:1px; }
+  .danger { color: var(--bad); } .small { padding:3px 9px; font-size:13px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; margin-top: 10px; align-items:center; }
+  details.group { border:1px solid var(--line); border-radius:8px; padding: 6px 12px; margin: 8px 0; background:#18151b; }
+  details.group > summary { cursor:pointer; font-weight:600; padding: 4px 0; }
+  .field { display:grid; grid-template-columns: 220px 1fr; gap: 4px 12px; align-items:center; padding: 6px 0; border-top: 1px solid #251f2a; }
+  .field .help { grid-column: 2; color: var(--muted); }
+  p.help { color: var(--muted); margin: 4px 0 8px; font-size: 13px; }
+  input[type=text], input[type=password], input[type=number], select, textarea { width:100%; background:#100e12; color:var(--text); border:1px solid #3a3240; border-radius:6px; padding:6px 8px; font:inherit; }
+  input[type=checkbox] { width:18px; height:18px; justify-self:start; }
+  .array-item { border-left: 3px solid var(--accent); padding: 4px 0 8px 10px; margin: 8px 0; }
+  .savebar { position:fixed; left:0; right:0; bottom:0; background:#0e0c10ee; border-top:1px solid var(--line); padding: 12px 16px; display:flex; gap:12px; justify-content:center; align-items:center; }
+  #saveMsg { color: var(--muted); }
+  #log { font: 13px/1.5 Consolas, monospace; max-height: 240px; overflow:auto; background:#100e12; border-radius:8px; padding: 8px 10px; }
+  #log .bad { color: var(--bad); } #log time { color: var(--muted); margin-right: 8px; }
+  #toys { color: var(--muted); }
+  .switch { display:flex; gap:8px; align-items:center; font-weight:600; }
+  @media (max-width: 600px) { .field { grid-template-columns: 1fr; } .field .help { grid-column: 1; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Mahjong Soul × Lovense</h1>
+  <p class="sub">Your toy reacts to your Mahjong Soul games, and optionally to Twitch viewers through the separate Twitch app.</p>
+
+  <section class="card">
+    <div class="row" style="margin-top:0">
+      <button class="stop" onclick="post('/api/stop')">■ STOP</button>
+      <label class="switch"><input type="checkbox" id="master"> Enabled</label>
+    </div>
+    <div class="status" style="margin-top:14px">
+      <div class="stat"><b>Lovense app</b><span id="sLovense">…</span></div>
+      <div class="stat"><b>Game userscript</b><span id="sGame">…</span></div>
+      <div class="stat"><b>Twitch app</b><span id="sTwitch">…</span></div>
+      <div class="stat"><b>Queue</b><span id="sQueue">…</span></div>
+    </div>
+    <div class="row"><button onclick="findToys()">Find toys</button><span id="toys"></span></div>
+  </section>
+
+  <section class="card">
+    <h2>Test</h2>
+    <p class="help">Game event buttons play that event's configured action. Twitch buttons run a fake viewer event through your trigger rules.</p>
+    <div class="row" id="gameTests"></div>
+    <div class="row" id="twitchTests"></div>
+  </section>
+
+  <section class="card">
+    <h2>Activity</h2>
+    <div id="log">Nothing yet.</div>
+  </section>
+
+  <section class="card">
+    <h2>Settings</h2>
+    <div id="form"></div>
+  </section>
+</main>
+<div class="savebar"><span id="saveMsg">No changes</span><button class="primary" id="saveBtn">Save settings</button></div>
+
+<script src="/ui.js"></script>
+<script>
+  let cfg = null, dirty = false;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  async function post(url, data) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data || {}) });
+    setTimeout(refresh, 150); return r.json().catch(() => ({}));
+  }
+  const dot = (on, text) => `<span class="dot ${on ? 'on' : ''}"></span>${esc(text)}`;
+  async function refresh() {
+    const s = await fetch('/api/status').then((r) => r.json()).catch(() => null);
+    if (!s) return;
+    $('master').checked = s.enabled;
+    const l = s.lovense;
+    $('sLovense').innerHTML = l.lastError ? dot(false, l.lastError) : l.lastOk ? dot(true, 'OK') : dot(false, 'not tested yet: click Find toys');
+    $('sGame').innerHTML = dot(s.gameClients > 0, s.gameClients ? `connected${s.lastGameEvent ? ' · last: ' + s.lastGameEvent : ''}` : 'waiting for game tab');
+    $('sTwitch').innerHTML = dot(s.twitch === 'connected', s.twitch);
+    $('sQueue').textContent = `${l.busy ? 'playing' : 'idle'} · ${l.queue} queued`;
+    $('log').innerHTML = s.log.length ? s.log.map((x) => `<div class="${x.ok ? '' : 'bad'}"><time>${new Date(x.ts).toLocaleTimeString()}</time>${esc(x.label)}: ${esc(x.detail)}</div>`).join('') : 'Nothing yet.';
+  }
+  async function findToys() {
+    $('toys').textContent = 'Looking…';
+    const r = await post('/api/toys');
+    $('toys').textContent = r.toys ? (r.toys.length ? r.toys.map((t) => `${t.nickName || t.name} (id ${t.id}${t.battery != null ? ', ' + t.battery + '%' : ''})`).join(', ') : 'Connected, but no toys found.') : (r.error || 'Failed');
+  }
+  $('master').onchange = (e) => { if (cfg) cfg.enabled = e.target.checked; post('/api/enabled', { enabled: e.target.checked }); };
+
+  const twitchTests = {
+    '100 bits': { type: 'bits', amount: 100 }, '500 bits': { type: 'bits', amount: 500 }, 'Sub': { type: 'sub' }, 'Resub': { type: 'resub', amount: 6 },
+    'Gift 3 subs': { type: 'gift', amount: 3 }, 'Follow': { type: 'follow' }, 'Raid': { type: 'raid', amount: 20 },
+  };
+  function buildTests() {
+    $('gameTests').innerHTML = ''; $('twitchTests').innerHTML = '';
+    for (const k of Object.keys(cfg.gameEvents)) $('gameTests').append(SettingsUI.el('button', { class: 'small', onclick: () => post('/api/test/game', { key: k }) }, k.replace(/_/g, ' ')));
+    for (const [n, e] of Object.entries(twitchTests)) $('twitchTests').append(SettingsUI.el('button', { class: 'small', onclick: () => post('/api/test/twitch', e) }, '🟣 ' + n));
+    for (const r of cfg.twitch.redeems) $('twitchTests').append(SettingsUI.el('button', { class: 'small', onclick: () => post('/api/test/twitch', { type: 'redeem', rewardTitle: r.rewardTitle }) }, '🟣 Redeem: ' + r.rewardTitle));
+    for (const c of cfg.twitch.chatCommands) $('twitchTests').append(SettingsUI.el('button', { class: 'small', onclick: () => post('/api/test/twitch', { type: 'chat', message: c.trigger }) }, '🟣 ' + c.trigger));
+  }
+  function changed() { dirty = true; $('saveMsg').textContent = 'Unsaved changes'; }
+  $('saveBtn').onclick = async () => {
+    const r = await post('/api/config', cfg);
+    if (r.ok) { cfg = r.config; dirty = false; $('saveMsg').textContent = 'Saved ✓'; SettingsUI.render($('form'), cfg, hints, changed); buildTests(); }
+    else $('saveMsg').textContent = 'Save failed: ' + (r.error || 'unknown');
+  };
+  window.addEventListener('beforeunload', (e) => { if (dirty) e.preventDefault(); });
+  let hints = {};
+  fetch('/api/config').then((r) => r.json()).then((d) => { cfg = d.config; hints = d.hints; SettingsUI.render($('form'), cfg, hints, changed); buildTests(); });
+  refresh(); setInterval(refresh, 2000);
+</script>
+</body>
+</html>

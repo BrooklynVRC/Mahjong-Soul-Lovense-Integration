@@ -1,0 +1,26 @@
+{
+  "name": "mahjong-soul-lovense",
+  "version": "1.0.0",
+  "description": "Lovense integration for Mahjong Soul: toy reactions to game events, plus optional Twitch viewer triggers via mahjong-soul-twitch.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test test/userscript.test.mjs test/triggers.test.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "ws": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/ws": "^8.18.2",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
