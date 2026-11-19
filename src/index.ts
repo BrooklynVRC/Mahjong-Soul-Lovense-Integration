@@ -15,10 +15,22 @@ const localOrigins = () => [`http://localhost:${config.port}`, `http://127.0.0.1
 // ---------------- Game events from the screen reader ----------------
 let lastGameEvent = '';
 let gameState: GameState | null = null;
+// Call streak: calls you make in the same hand build up (reset when the hand ends).
+let myCalls = 0;
+const MY_CALLS = ['my_pon', 'my_chi', 'my_kan', 'my_call'];
+const HAND_ENDS = ['my_win_ron', 'my_win_tsumo', 'my_yakuman', 'dealt_in', 'opponent_tsumo', 'opponent_ron', 'opponent_ron_other', 'draw', 'game_start', 'round_start', 'game_end_1', 'game_end_2', 'game_end_3', 'game_end_4'];
 function playGame(key: string) {
   lastGameEvent = keyLabel(key) === key ? key.replace('_', ' ') : keyLabel(key);
+  if (HAND_ENDS.includes(key)) myCalls = 0;
   const t = forGame(config, key);
-  if (t) toy.play(t.action, t.label);
+  if (!t) { if (MY_CALLS.includes(key)) myCalls++; return; }
+  if (MY_CALLS.includes(key) && config.callStreak.enabled) {
+    myCalls++;
+    const extra = myCalls - 1, s = config.callStreak;
+    toy.play({ ...t.action, strength: t.action.strength + extra * s.strengthPerCall, seconds: t.action.seconds + extra * s.secondsPerCall }, `${t.label} (call #${myCalls} this hand)`);
+    return;
+  }
+  toy.play(t.action, t.label);
 }
 const reader = new ScreenReader({
   sharedDir: sharedDir(),
