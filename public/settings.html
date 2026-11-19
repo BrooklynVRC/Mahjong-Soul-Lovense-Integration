@@ -41,7 +41,7 @@
 <body>
 <main>
   <h1>Mahjong Soul × Lovense</h1>
-  <p class="sub">Your toy reacts to your Mahjong Soul games, and optionally to Twitch viewers through the separate Twitch app.</p>
+  <p class="sub">Your toy reacts to your Mahjong Soul games, read from the screen, and optionally to Twitch viewers through the separate Twitch app.</p>
 
   <section class="card">
     <div class="row" style="margin-top:0">
@@ -50,12 +50,13 @@
     </div>
     <div class="status" style="margin-top:14px">
       <div class="stat"><b>Lovense app</b><span id="sLovense">…</span></div>
-      <div class="stat"><b>Game source</b><span id="sGame">…</span></div>
+      <div class="stat"><b>Screen reader</b><span id="sGame">…</span></div>
       <div class="stat"><b>Twitch app</b><span id="sTwitch">…</span></div>
       <div class="stat"><b>Queue</b><span id="sQueue">…</span></div>
     </div>
     <div class="row"><button onclick="findToys()">Find toys</button><span id="toys"></span></div>
-    <div class="row"><a class="primary" style="padding:7px 12px;border-radius:7px;text-decoration:none" href="/mahjong-soul-bridge.user.js" title="Needs Tampermonkey or Violentmonkey. Skip if already installed for the Twitch app.">Install userscript</a></div>
+    <div class="row"><a class="primary" style="padding:7px 12px;border-radius:7px;text-decoration:none" href="/screen">Screen reader & calibration</a><span class="help" id="sState"></span></div>
+    <div id="hint" style="display:none;margin-top:10px;padding:10px 12px;border-radius:8px;background:#2b2414;border:1px solid #5a4a20;color:#f6dfa4"></div>
     <p class="help">Settings folder: <code id="dataDir"></code> · <span id="version"></span></p>
   </section>
 
@@ -95,7 +96,10 @@
     $('dataDir').textContent = s.dataDir; $('version').textContent = 'v' + s.version;
     const l = s.lovense;
     $('sLovense').innerHTML = l.lastError ? dot(false, l.lastError) : l.lastOk ? dot(true, 'OK') : dot(false, 'not tested yet: click Find toys');
-    $('sGame').innerHTML = dot(s.gameClients > 0, s.gameClients ? `${s.gameClients} connected${s.lastGameEvent ? ' · last: ' + s.lastGameEvent : ''}` : 'waiting for game (userscript or screen reader)');
+    const sc = s.screen, gs = sc.state, ORD = ['1st', '2nd', '3rd', '4th'];
+    $('sGame').innerHTML = dot(sc.capturing && sc.templates > 0, sc.capturing ? `${sc.templates} templates${sc.detecting ? '' : ' · paused'}${s.lastGameEvent ? ' · last: ' + s.lastGameEvent : ''}` : sc.status);
+    $('sState').textContent = gs.inGame ? `In game${gs.mode ? ' · ' + gs.mode : ''}${gs.place ? ' · ' + ORD[gs.place - 1] : ''}` : 'Not in a game';
+    $('hint').style.display = sc.hint ? 'block' : 'none'; $('hint').textContent = sc.hint ? 'Screen reader: ' + sc.hint : '';
     $('sTwitch').innerHTML = dot(s.twitch === 'connected', s.twitch);
     $('sQueue').textContent = `${l.busy ? 'playing' : 'idle'} · ${l.queue} queued`;
     $('log').innerHTML = s.log.length ? s.log.map((x) => `<div class="${x.ok ? '' : 'bad'}"><time>${new Date(x.ts).toLocaleTimeString()}</time>${esc(x.label)}: ${esc(x.detail)}</div>`).join('') : 'Nothing yet.';

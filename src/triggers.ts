@@ -1,29 +1,10 @@
 // Maps incoming game / Twitch events to the configured toy actions.
-import type { Action, Config, GameKey } from './config.js';
+import type { Action, Config } from './config.js';
 
-/** Candidate game-event keys in priority order; the first enabled one is played. */
-export function gameKeys(e: any): GameKey[] {
-  switch (e?.type) {
-    case 'game_start': return ['game_start'];
-    case 'round_start': return e.iAmDealer ? ['my_dealer_round'] : [];
-    case 'riichi': return [e.isMe ? 'my_riichi' : 'opponent_riichi'];
-    case 'call': return e.isMe ? ['my_call'] : [];
-    case 'win':
-      if (e.isMe) return e.yakuman ? ['my_yakuman', e.method === 'tsumo' ? 'my_win_tsumo' : 'my_win_ron'] : [e.method === 'tsumo' ? 'my_win_tsumo' : 'my_win_ron'];
-      if (e.dealtInByMe) return ['dealt_in'];
-      return [e.method === 'tsumo' ? 'opponent_tsumo' : 'opponent_ron_other'];
-    case 'draw': return [e.iAmTenpai ? 'draw_tenpai' : 'draw_noten'];
-    case 'game_end': return e.myPlace >= 1 && e.myPlace <= 4 ? [`game_end_${e.myPlace}` as GameKey] : [];
-  }
-  return [];
-}
-
-export function forGame(cfg: Config, e: any): { label: string; action: Action } | null {
-  for (const k of gameKeys(e)) {
-    const r = cfg.gameEvents[k];
-    if (r?.enabled) return { label: `game: ${k}`, action: r.action };
-  }
-  return null;
+/** The toy action for a screen-reader event key (or a derived one like took_lead), if enabled. */
+export function forGame(cfg: Config, key: string): { label: string; action: Action } | null {
+  const r = (cfg.gameEvents as Record<string, { enabled: boolean; action: Action }>)[key];
+  return r?.enabled ? { label: `game: ${key}`, action: r.action } : null;
 }
 
 const lastUse = new Map<string, number>();

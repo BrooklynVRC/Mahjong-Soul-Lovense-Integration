@@ -1,15 +1,16 @@
 {
   "name": "mahjong-soul-lovense",
-  "version": "1.2.0",
-  "description": "Lovense integration for Mahjong Soul: toy reactions to game events, plus optional Twitch viewer triggers via mahjong-soul-twitch.",
+  "version": "2.0.0",
+  "description": "Lovense integration for Mahjong Soul (Steam client): reads the game from the screen and makes your toy react, plus optional Twitch viewer triggers.",
   "type": "module",
   "private": true,
   "license": "MIT",
   "scripts": {
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
+    "build:host": "dotnet build host/MahjongSoulHost.csproj -c Release -nologo -v q",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test test/userscript.test.mjs test/triggers.test.mjs",
+    "test": "node --import tsx --test test/screen.test.mjs test/triggers.test.mjs",
     "package": "node scripts/package.mjs"
   },
   "engines": {
@@ -30,5 +31,11 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/BrooklynVRC/Mahjong-Soul-Lovense-Integration"
+  },
+  "app": {
+    "title": "Mahjong Soul × Lovense",
+    "dataFolder": "MahjongSoulLovense",
+    "accent": "#ff5c9a",
+    "letter": "L"
   }
 }

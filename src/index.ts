@@ -1,30 +1,39 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
-import { DATA_DIR, HINTS, loadConfig, saveConfig, type Config, type GameKey } from './config.js';
-import { USERSCRIPT, VERSION, openBrowser, pauseIfPackaged, readAsset } from './runtime.js';
+import { DATA_DIR, HINTS, loadConfig, saveConfig, type Config } from './config.js';
+import { VERSION, captureExe, pauseIfPackaged, readAsset, sharedDir, showUi } from './runtime.js';
+import { ScreenReader } from './screen/reader.js';
+import { keyLabel, type Detection, type GameState } from './screen/keys.js';
 import { Lovense } from './lovense.js';
 import { forGame, forTwitch } from './triggers.js';
 
 let config: Config = loadConfig();
 const toy = new Lovense(() => config);
 
-const GAME_ORIGINS = ['https://game.mahjongsoul.com', 'https://mahjongsoul.game.yo-star.com', 'https://game.maj-soul.com', 'https://game.maj-soul.net'];
 const localOrigins = () => [`http://localhost:${config.port}`, `http://127.0.0.1:${config.port}`];
 
-// ---------------- Game events from the userscript ----------------
-const gameIn = new WebSocketServer({ noServer: true });
+// ---------------- Game events from the screen reader ----------------
 let lastGameEvent = '';
-gameIn.on('connection', (ws) => {
-  console.log('[game] game source connected (userscript or screen reader)');
-  ws.on('message', (raw) => {
-    try {
-      const e = JSON.parse(String(raw));
-      if (e?.source !== 'mahjongsoul') return;
-      lastGameEvent = `${String(e.type).replace('_', ' ')} (${e.via === 'screen' ? 'screen reader' : 'userscript'})`;
-      const t = forGame(config, e);
-      if (t) toy.play(t.action, t.label);
-    } catch { /* ignore */ }
-  });
+let gameState: GameState | null = null;
+function playGame(key: string) {
+  lastGameEvent = keyLabel(key) === key ? key.replace('_', ' ') : keyLabel(key);
+  const t = forGame(config, key);
+  if (t) toy.play(t.action, t.label);
+}
+const reader = new ScreenReader({
+  getConfig: () => config.screen,
+  saveConfig: (sc) => { config = saveConfig({ ...config, screen: sc }); return config.screen; },
+  sharedDir: sharedDir(),
+  captureExe,
+  onDetect: (d: Detection) => playGame(d.key),
+  onState: (st: GameState) => {
+    const prev = gameState?.place ?? null;
+    gameState = st;
+    if (st.inGame && prev && st.place && prev !== st.place) {
+      if (st.place === 1) playGame('took_lead');
+      else if (prev === 1) playGame('lost_lead');
+    }
+  },
 });
 
 // ---------------- Twitch events from mahjong-soul-twitch ----------------
@@ -83,10 +92,11 @@ const server = createServer(async (req, res) => {
   const origin = req.headers.origin;
   if (req.method !== 'GET' && origin && !localOrigins().includes(origin)) return send(res, 403, { error: 'forbidden origin' });
   try {
+    if (await reader.handle(req, res, url.pathname)) return;
     switch (`${req.method} ${url.pathname}`) {
       case 'GET /': return file(res, 'settings.html', 'text/html; charset=utf-8');
+      case 'GET /screen': return file(res, 'screen.html', 'text/html; charset=utf-8');
       case 'GET /ui.js': return file(res, 'ui.js', 'text/javascript; charset=utf-8');
-      case `GET /${USERSCRIPT}`: return file(res, USERSCRIPT, 'text/javascript; charset=utf-8');
       case 'GET /api/config': return send(res, 200, { config, hints: HINTS });
       case 'POST /api/config':
         config = saveConfig(await body(req));
@@ -96,7 +106,7 @@ const server = createServer(async (req, res) => {
         version: VERSION, dataDir: DATA_DIR,
         enabled: config.enabled,
         lovense: { lastError: toy.lastError, lastOk: toy.lastOk, busy: toy.busy, queue: toy.queueLength },
-        gameClients: gameIn.clients.size, lastGameEvent,
+        screen: reader.summary(), lastGameEvent,
         twitch: twitchStatus,
         log: toy.log.slice(0, 25),
       });
@@ -109,11 +119,15 @@ const server = createServer(async (req, res) => {
       }
       case 'POST /api/toys': return send(res, 200, { toys: await toy.getToys() });
       case 'POST /api/test/game': {
-        const { key } = await body(req) as { key: GameKey };
-        const r = config.gameEvents[key];
+        const { key } = await body(req) as { key: string };
+        const r = (config.gameEvents as Record<string, { action: Config['gameEvents']['my_riichi']['action'] }>)[key];
         if (!r) return send(res, 400, { error: 'unknown event' });
         toy.play(r.action, `test: ${key}`);
         return send(res, 200, { ok: true });
+      }
+      case 'POST /api/shutdown': {
+        send(res, 200, { ok: true });
+        return void shutdown('app closing');
       }
       case 'POST /api/test/twitch': handleTwitch({ source: 'twitch', user: 'TestViewer', isBroadcaster: true, ...(await body(req)) }); return send(res, 200, { ok: true });
       default: return send(res, 404, { error: 'not found' });
@@ -123,35 +137,35 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.on('upgrade', (req, socket, head) => {
-  const path = new URL(req.url ?? '/', 'http://localhost').pathname;
-  const origin = req.headers.origin;
-  if (path !== '/game' || (origin && !GAME_ORIGINS.includes(origin))) return socket.destroy();
-  gameIn.handleUpgrade(req, socket, head, (ws) => gameIn.emit('connection', ws, req));
-});
-
 const home = `http://localhost:${config.port}/`;
 server.on('error', async (e: NodeJS.ErrnoException) => {
   if (e.code === 'EADDRINUSE') {
-    console.log(`Port ${config.port} is already in use. The app is probably already running, so opening ${home}`);
-    openBrowser(home);
+    console.log(`Port ${config.port} is already in use. The app is probably already running.`);
+    showUi(home, true, true);
   } else console.error('Server error:', e);
   await pauseIfPackaged();
   process.exit(1);
 });
 
 server.listen(config.port, '127.0.0.1', () => {
-  console.log(`Mahjong Soul × Lovense ${VERSION}  (keep this window open while playing)`);
+  console.log(`Mahjong Soul × Lovense ${VERSION}`);
   console.log(`  Settings: ${home}`);
   console.log(`  Data:     ${DATA_DIR}`);
-  if (config.openBrowserOnStart) openBrowser(home);
+  showUi(home, config.openBrowserOnStart);
+  reader.start();
   syncTwitch();
 });
 
 process.on('uncaughtException', (e) => console.error('[error]', e));
 process.on('unhandledRejection', (e) => console.error('[error]', e));
 
-// Stop the toy if the app is closed (SIGHUP/SIGBREAK = console window closed on Windows).
-for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK'] as const) {
-  process.on(sig, async () => { await toy.stopAll('app closing').catch(() => {}); process.exit(0); });
+// Stop the toy when the app closes (window closed, console closed, Ctrl+C).
+let closing = false;
+async function shutdown(label: string) {
+  if (closing) return;
+  closing = true;
+  reader.stop();
+  await toy.stopAll(label).catch(() => {});
+  setTimeout(() => process.exit(0), 200);
 }
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK'] as const) process.on(sig, () => void shutdown('app closing'));

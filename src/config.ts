@@ -2,6 +2,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { dataDir } from './runtime.js';
+import { EVENT_KEYS } from './screen/keys.js';
+import { SCREEN_DEFAULTS, SCREEN_HINTS } from './screen/reader.js';
 
 export const DATA_DIR = dataDir('MahjongSoulLovense');
 const CONFIG_PATH = resolve(DATA_DIR, 'config.json');
@@ -40,8 +42,9 @@ export const DEFAULT_CONFIG = {
     maxQueue: 10,
   },
   gameEvents: {
+    game_mode: rule(false, act('vibrate', 3, 1)),
     game_start: rule(false, act('vibrate', 4, 2)),
-    my_dealer_round: rule(false, act('vibrate', 4, 2)),
+    round_start: rule(false, act('vibrate', 3, 1)),
     my_riichi: rule(true, act('vibrate', 7, 3)),
     opponent_riichi: rule(false, act('vibrate', 3, 2)),
     my_call: rule(false, act('vibrate', 3, 1)),
@@ -51,12 +54,13 @@ export const DEFAULT_CONFIG = {
     dealt_in: rule(true, act('pattern', 14, 4, { pattern: '20;0;20;0;20;0' })),
     opponent_tsumo: rule(true, act('vibrate', 8, 2)),
     opponent_ron_other: rule(false, act('vibrate', 3, 1)),
-    draw_tenpai: rule(false, act('vibrate', 5, 2)),
-    draw_noten: rule(false, act('vibrate', 8, 2)),
+    draw: rule(false, act('vibrate', 5, 2)),
     game_end_1: rule(true, act('preset', 18, 10, { preset: 'fireworks' })),
     game_end_2: rule(false, act('vibrate', 8, 4)),
     game_end_3: rule(false, act('vibrate', 10, 5)),
     game_end_4: rule(true, act('pattern', 18, 8, { pattern: '20;10;20;10;5;20' })),
+    took_lead: rule(false, act('preset', 10, 4, { preset: 'wave' })),
+    lost_lead: rule(false, act('vibrate', 9, 3)),
   },
   twitch: {
     enabled: false,
@@ -78,6 +82,7 @@ export const DEFAULT_CONFIG = {
     redeems: [{ enabled: true, rewardTitle: 'Buzz the streamer', action: act('vibrate', 10, 5) }],
     chatCommands: [{ enabled: false, trigger: '!buzz', cooldownSec: 60, modsOnly: false, action: act('vibrate', 6, 2) }],
   },
+  screen: SCREEN_DEFAULTS,
 };
 
 export type Config = typeof DEFAULT_CONFIG;
@@ -94,8 +99,8 @@ const ACTION_HINTS = {
 };
 
 export const HINTS: Record<string, unknown> = {
-  port: { help: 'Restart the app after changing. The userscript sends to 7702 by default.' },
-  openBrowserOnStart: { label: 'Open this page when the app starts' },
+  port: { help: 'Restart the app after changing.' },
+  openBrowserOnStart: { label: 'Open in browser when run on its own', help: 'Only used when the server runs without the app window.' },
   enabled: { label: 'Master switch', help: 'Turn everything off without losing settings.' },
   lovense: { label: 'Lovense connection', help: 'Open Lovense Remote → Game Mode (or Lovense Connect) and copy the IP and port it shows.' },
   'lovense.https': { label: 'Use HTTPS', help: 'Needed when the app shows an HTTPS port (host looks like 192-168-1-5.lovense.club).' },
@@ -104,13 +109,7 @@ export const HINTS: Record<string, unknown> = {
   'safety.maxStrength': { label: 'Max strength cap', min: 0, max: 20, step: 1 },
   'safety.maxSeconds': { label: 'Max seconds per action', min: 1, max: 600 },
   'safety.queueMode': { label: 'When busy', options: [{ value: 'queue', label: 'Queue it' }, { value: 'override', label: 'Replace current' }, { value: 'ignore', label: 'Ignore new' }] },
-  gameEvents: { label: 'Game events', help: 'What the toy does for each Mahjong Soul event. "My" means your seat.' },
-  'gameEvents.dealt_in': { label: 'I dealt in' },
-  'gameEvents.opponent_tsumo': { label: 'Opponent tsumo (I pay)' },
-  'gameEvents.opponent_ron_other': { label: 'Opponent ron (not off me)' },
-  'gameEvents.my_dealer_round': { label: 'My dealer round starts' },
-  'gameEvents.game_end_1': { label: 'Finished 1st' }, 'gameEvents.game_end_2': { label: 'Finished 2nd' },
-  'gameEvents.game_end_3': { label: 'Finished 3rd' }, 'gameEvents.game_end_4': { label: 'Finished 4th' },
+  gameEvents: { label: 'Game events', help: 'What the toy does for each event the screen reader sees. "My" means your seat. Lead changes come from the live score reading.' },
   twitch: { label: 'Twitch triggers', help: 'Needs mahjong-soul-twitch running with forwarding on. That app owns the Twitch login; this one only listens.' },
   'twitch.url': { label: 'Twitch app events URL' },
   'twitch.stopCommand': { help: 'Broadcaster or mods can type this to stop the toy and clear the queue.' },
@@ -119,6 +118,11 @@ export const HINTS: Record<string, unknown> = {
   'twitch.redeems': { label: 'Channel point redeems', help: 'Reward title must match exactly (case-insensitive).', template: { enabled: true, rewardTitle: 'New reward', action: act('vibrate', 8, 3) } },
   'twitch.chatCommands': { template: { enabled: true, trigger: '!vibe', cooldownSec: 60, modsOnly: false, action: act('vibrate', 6, 2) } },
 };
+const LEAD_LABELS: Record<string, string> = { took_lead: 'Took the lead (now 1st)', lost_lead: 'Lost the lead' };
+for (const { key, label } of EVENT_KEYS) HINTS[`gameEvents.${key}`] = { label };
+for (const [key, label] of Object.entries(LEAD_LABELS)) HINTS[`gameEvents.${key}`] = { label };
+HINTS.screen = { label: 'Screen reader', help: 'Teach banners and score boxes on the Screen reader page.' };
+for (const [k, v] of Object.entries(SCREEN_HINTS)) HINTS[`screen.${k}`] = v;
 for (const [k, v] of Object.entries(ACTION_HINTS)) {
   HINTS[`gameEvents.*.action.${k}`] = v;
   HINTS[`twitch.*.action.${k}`] = v;

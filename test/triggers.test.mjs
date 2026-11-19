@@ -3,22 +3,24 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 const { DEFAULT_CONFIG } = await import('../src/config.ts');
-const { forGame, forTwitch, gameKeys } = await import('../src/triggers.ts');
+const { forGame, forTwitch } = await import('../src/triggers.ts');
+const { EVENT_KEYS } = await import('../src/screen/keys.ts');
 const { Lovense } = await import('../src/lovense.ts');
 
 const cfg = () => structuredClone(DEFAULT_CONFIG);
 
-test('game events map to the right keys', () => {
-  assert.deepEqual(gameKeys({ type: 'riichi', isMe: true }), ['my_riichi']);
-  assert.deepEqual(gameKeys({ type: 'win', isMe: false, dealtInByMe: true, method: 'ron' }), ['dealt_in']);
-  assert.deepEqual(gameKeys({ type: 'win', isMe: false, method: 'tsumo' }), ['opponent_tsumo']);
-  assert.deepEqual(gameKeys({ type: 'win', isMe: true, yakuman: true, method: 'tsumo' }), ['my_yakuman', 'my_win_tsumo']);
-  assert.deepEqual(gameKeys({ type: 'game_end', myPlace: 4 }), ['game_end_4']);
+test('every screen event has a toy rule', () => {
+  const c = cfg();
+  for (const { key } of EVENT_KEYS) assert.ok(c.gameEvents[key], key);
+  assert.ok(c.gameEvents.took_lead && c.gameEvents.lost_lead);
 });
 
-test('disabled yakuman falls back to normal win', () => {
-  const c = cfg(); c.gameEvents.my_yakuman.enabled = false;
-  assert.equal(forGame(c, { type: 'win', isMe: true, yakuman: true, method: 'ron' }).label, 'game: my_win_ron');
+test('game keys play their rule only when enabled', () => {
+  const c = cfg();
+  assert.equal(forGame(c, 'my_riichi').label, 'game: my_riichi');
+  c.gameEvents.my_riichi.enabled = false;
+  assert.equal(forGame(c, 'my_riichi'), null);
+  assert.equal(forGame(c, 'not_a_key'), null);
 });
 
 test('bits use highest tier reached', () => {
