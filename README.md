@@ -8,6 +8,7 @@ A Windows app that **reads your Mahjong Soul game from the screen** (Steam clien
 
 - **Game reactions**, worked out mostly from the score changes on screen (so skins and effects don't matter), each with its own setting: my riichi, opponent riichi, calls, my ron or tsumo, yakuman, **dealing in**, opponent wins, draws, round and game start, game mode, **taking or losing the lead** (from the live scores), and finishing 1st–4th.
 - **Action types**: constant strength, Lovense presets (pulse, wave, fireworks, earthquake), or custom patterns (`20;0;15;0`). You also choose the function: Vibrate, Rotate, Pump, Thrusting and so on.
+- **Real time + hand size**: the call banners (riichi, ron, tsumo, pon, chi, kan) react instantly, and **your pons/chis build a call streak**: each extra call in the same hand is stronger and longer. Win-screen titles give separate actions for **mangan, haneman, baiman, sanbaiman and yakuman**.
 - **Twitch triggers** (optional): bits tiers, subs, resubs, gift subs (duration grows with the count), follows, raids, channel point redeems by title, and chat commands with cooldowns and a mods-only option.
 - **Safety**: a big **STOP** button, a master switch, a strength cap, a maximum duration, and a choice of queue, replace or ignore when busy. Mods can type `!stop` in chat. **Closing the window stops the toy.**
 
