@@ -6,7 +6,7 @@ A Windows app that **reads your Mahjong Soul game from the screen** (Steam clien
 
 ## Features
 
-- **Game reactions**, each with its own setting: my riichi, opponent riichi, calls, my ron or tsumo, yakuman, **dealing in**, opponent wins, draws, round and game start, game mode, **taking or losing the lead** (from the live scores), and finishing 1st–4th.
+- **Game reactions**, worked out mostly from the score changes on screen (so skins and effects don't matter), each with its own setting: my riichi, opponent riichi, calls, my ron or tsumo, yakuman, **dealing in**, opponent wins, draws, round and game start, game mode, **taking or losing the lead** (from the live scores), and finishing 1st–4th.
 - **Action types**: constant strength, Lovense presets (pulse, wave, fireworks, earthquake), or custom patterns (`20;0;15;0`). You also choose the function: Vibrate, Rotate, Pump, Thrusting and so on.
 - **Twitch triggers** (optional): bits tiers, subs, resubs, gift subs (duration grows with the count), follows, raids, channel point redeems by title, and chat commands with cooldowns and a mods-only option.
 - **Safety**: a big **STOP** button, a master switch, a strength cap, a maximum duration, and a choice of queue, replace or ignore when busy. Mods can type `!stop` in chat. **Closing the window stops the toy.**
@@ -24,7 +24,7 @@ The screen reader gets the game's picture the same way **OBS Window Capture and 
 2. **Lovense**: in Lovense Remote, connect your toy and turn on **Game Mode**. Lovense Connect also works.
    - Copy the IP and port it shows into *Lovense connection* and save, then click **Find toys**.
    - For an HTTPS port, the host looks like `192-168-1-5.lovense.club`; turn *Use HTTPS* on.
-3. **Screen reader**: start Mahjong Soul, open **Screen reader & calibration** and teach it the banners and score boxes. The [Twitch app's README](https://github.com/BrooklynVRC/Mahjong-Soul-Twitch-Integration#calibrating-the-screen-reader) has the full guide. Templates are shared between the two apps, so if you calibrated in the Twitch app, you're already done.
+3. **Screen reader**: nothing to do in most cases. The app ships with a built-in calibration and updates it online, and calibration is shared with the Twitch app. See the [calibration guide](https://github.com/BrooklynVRC/Mahjong-Soul-Twitch-Integration#calibration-done-once-for-everyone) if you want to teach it yourself.
 4. **Twitch triggers** (optional): run the Twitch app with *Forwarding* on, then turn on **Twitch triggers → Enabled** here.
 
 Use the **Test** buttons to try every event and viewer trigger without playing.

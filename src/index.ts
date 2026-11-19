@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { DATA_DIR, HINTS, loadConfig, saveConfig, type Config } from './config.js';
-import { VERSION, captureExe, pauseIfPackaged, readAsset, sharedDir, showUi } from './runtime.js';
+import { VERSION, builtinPack, captureExe, pauseIfPackaged, readAsset, sharedDir, showUi } from './runtime.js';
 import { ScreenReader } from './screen/reader.js';
 import { keyLabel, type Detection, type GameState } from './screen/keys.js';
 import { Lovense } from './lovense.js';
@@ -21,10 +21,9 @@ function playGame(key: string) {
   if (t) toy.play(t.action, t.label);
 }
 const reader = new ScreenReader({
-  getConfig: () => config.screen,
-  saveConfig: (sc) => { config = saveConfig({ ...config, screen: sc }); return config.screen; },
   sharedDir: sharedDir(),
   captureExe,
+  builtinPack,
   onDetect: (d: Detection) => playGame(d.key),
   onState: (st: GameState) => {
     const prev = gameState?.place ?? null;
@@ -125,6 +124,7 @@ const server = createServer(async (req, res) => {
         toy.play(r.action, `test: ${key}`);
         return send(res, 200, { ok: true });
       }
+      case 'POST /api/bookmark': return send(res, 200, { ok: reader.bookmark() });
       case 'POST /api/shutdown': {
         send(res, 200, { ok: true });
         return void shutdown('app closing');

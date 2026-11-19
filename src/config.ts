@@ -3,7 +3,6 @@ import { resolve } from 'node:path';
 
 import { dataDir } from './runtime.js';
 import { EVENT_KEYS } from './screen/keys.js';
-import { SCREEN_DEFAULTS, SCREEN_HINTS } from './screen/reader.js';
 
 export const DATA_DIR = dataDir('MahjongSoulLovense');
 const CONFIG_PATH = resolve(DATA_DIR, 'config.json');
@@ -82,7 +81,6 @@ export const DEFAULT_CONFIG = {
     redeems: [{ enabled: true, rewardTitle: 'Buzz the streamer', action: act('vibrate', 10, 5) }],
     chatCommands: [{ enabled: false, trigger: '!buzz', cooldownSec: 60, modsOnly: false, action: act('vibrate', 6, 2) }],
   },
-  screen: SCREEN_DEFAULTS,
 };
 
 export type Config = typeof DEFAULT_CONFIG;
@@ -121,8 +119,6 @@ export const HINTS: Record<string, unknown> = {
 const LEAD_LABELS: Record<string, string> = { took_lead: 'Took the lead (now 1st)', lost_lead: 'Lost the lead' };
 for (const { key, label } of EVENT_KEYS) HINTS[`gameEvents.${key}`] = { label };
 for (const [key, label] of Object.entries(LEAD_LABELS)) HINTS[`gameEvents.${key}`] = { label };
-HINTS.screen = { label: 'Screen reader', help: 'Teach banners and score boxes on the Screen reader page.' };
-for (const [k, v] of Object.entries(SCREEN_HINTS)) HINTS[`screen.${k}`] = v;
 for (const [k, v] of Object.entries(ACTION_HINTS)) {
   HINTS[`gameEvents.*.action.${k}`] = v;
   HINTS[`twitch.*.action.${k}`] = v;
