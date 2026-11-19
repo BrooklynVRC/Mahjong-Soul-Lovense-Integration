@@ -65,4 +65,6 @@ npm test
 npm run package      # release\MahjongSoul-Lovense.exe
 ```
 
-MIT licensed. Not affiliated with Yostar, Mahjong Soul or Lovense.
+Companion app: [Mahjong Soul Twitch Integration](https://github.com/BrooklynVRC/Mahjong-Soul-Twitch-Integration) (chat, overlay, predictions, Discord).
+
+MIT licensed. Not affiliated with Yostar, Mahjong Soul, Lovense or Intiface.
