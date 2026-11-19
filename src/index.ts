@@ -15,7 +15,7 @@ const localOrigins = () => [`http://localhost:${config.port}`, `http://127.0.0.1
 const gameIn = new WebSocketServer({ noServer: true });
 let lastGameEvent = '';
 gameIn.on('connection', (ws) => {
-  console.log('[game] userscript connected');
+  console.log('[game] game source connected (userscript or screen reader)');
   ws.on('message', (raw) => {
     try {
       const e = JSON.parse(String(raw));
