@@ -52,6 +52,7 @@ export const DEFAULT_CONFIG = {
     my_yakuman: rule(true, act('vibrate', 20, 15)),
     dealt_in: rule(true, act('pattern', 14, 4, { pattern: '20;0;20;0;20;0' })),
     opponent_tsumo: rule(true, act('vibrate', 8, 2)),
+    opponent_ron: rule(false, act('vibrate', 4, 2)),
     opponent_ron_other: rule(false, act('vibrate', 3, 1)),
     draw: rule(false, act('vibrate', 5, 2)),
     game_end_1: rule(true, act('preset', 18, 10, { preset: 'fireworks' })),
