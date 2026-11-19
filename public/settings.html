@@ -36,6 +36,15 @@
   #toys { color: var(--muted); }
   .switch { display:flex; gap:8px; align-items:center; font-weight:600; }
   @media (max-width: 600px) { .field { grid-template-columns: 1fr; } .field .help { grid-column: 1; } }
+
+  .gs { display:grid; gap:8px; }
+  .gs .st { display:flex; gap:12px; align-items:flex-start; padding:10px 12px; border-radius:8px; background:#131820; border:1px solid transparent; }
+  .gs .st.next { border-color: var(--accent); }
+  .gs .n { width:26px; height:26px; flex:none; border-radius:50%; display:grid; place-items:center; font-weight:700; background:#2a2e3a; }
+  .gs .st.done .n { background: var(--ok); color:#06150d; }
+  .gs .tx { flex:1; } .gs .tx > b { display:block; } .gs .tx > span { color: var(--muted); font-size: 13px; }
+  .gs code { user-select: all; }
+  .copy { margin-left:6px; padding:1px 8px; font-size:12px; }
 </style>
 </head>
 <body>
@@ -58,6 +67,11 @@
     <div class="row"><a class="primary" style="padding:7px 12px;border-radius:7px;text-decoration:none" href="/screen">Screen reader & calibration</a><span class="help" id="sState"></span></div>
     <div id="hint" style="display:none;margin-top:10px;padding:10px 12px;border-radius:8px;background:#2b2414;border:1px solid #5a4a20;color:#f6dfa4"></div>
     <p class="help">Settings folder: <code id="dataDir"></code> · <span id="version"></span></p>
+  </section>
+
+  <section class="card">
+    <h2>Getting started</h2>
+    <div class="gs" id="gs"></div>
   </section>
 
   <section class="card">
@@ -89,9 +103,21 @@
     setTimeout(refresh, 150); return r.json().catch(() => ({}));
   }
   const dot = (on, text) => `<span class="dot ${on ? 'on' : ''}"></span>${esc(text)}`;
+
+  function copy(text, btn) { navigator.clipboard?.writeText(text).then(() => { const o = btn.textContent; btn.textContent = 'Copied ✓'; setTimeout(() => (btn.textContent = o), 1500); }); }
+  function steps(list) {
+    const next = list.findIndex((s) => !s.done && !s.optional);
+    document.getElementById('gs').innerHTML = list.map((s, i) => `<div class="st ${s.done ? 'done' : ''} ${i === next ? 'next' : ''}"><div class="n">${s.done ? '✓' : i + 1}</div><div class="tx"><b>${s.title}${s.optional ? ' <span>(optional)</span>' : ''}</b><span>${s.done ? (s.doneText || 'Done.') : s.how}</span></div></div>`).join('');
+  }
   async function refresh() {
     const s = await fetch('/api/status').then((r) => r.json()).catch(() => null);
     if (!s) return;
+    steps([
+      { title: 'Connect your toy', done: !!s.lovense.lastOk && !s.lovense.lastError, doneText: 'Lovense is answering.', how: 'Open the Lovense Remote app, connect your toy and turn on <b>Game Mode</b>. Type the Local IP and Port it shows into "1. Connect your toy" below, press <b>Save settings</b>, then <b>Find toys</b> above.' },
+      { title: 'Open Mahjong Soul', done: s.screen.capturing, doneText: 'The game is being read.', how: 'Start Mahjong Soul (Steam). Keep it windowed or borderless; it can be behind other windows but not minimized.' },
+      { title: 'Try a reaction', optional: true, done: false, how: 'Press any button under "Test" to feel what each event does. Change strengths in "3. What happens in the game".' },
+      { title: 'Let Twitch viewers trigger it', optional: true, done: s.twitch === 'connected', doneText: 'Listening to the Twitch app.', how: 'Run the Mahjong Soul × Twitch app, then turn on "5. Twitch viewers" below.' },
+    ]);
     $('master').checked = s.enabled;
     $('dataDir').textContent = s.dataDir; $('version').textContent = 'v' + s.version;
     const l = s.lovense;
