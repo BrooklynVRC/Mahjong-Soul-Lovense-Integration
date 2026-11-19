@@ -20,7 +20,7 @@ gameIn.on('connection', (ws) => {
     try {
       const e = JSON.parse(String(raw));
       if (e?.source !== 'mahjongsoul') return;
-      lastGameEvent = e.type;
+      lastGameEvent = `${String(e.type).replace('_', ' ')} (${e.via === 'screen' ? 'screen reader' : 'userscript'})`;
       const t = forGame(config, e);
       if (t) toy.play(t.action, t.label);
     } catch { /* ignore */ }
