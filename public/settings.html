@@ -55,6 +55,8 @@
       <div class="stat"><b>Queue</b><span id="sQueue">…</span></div>
     </div>
     <div class="row"><button onclick="findToys()">Find toys</button><span id="toys"></span></div>
+    <div class="row"><a class="primary" style="padding:7px 12px;border-radius:7px;text-decoration:none" href="/mahjong-soul-bridge.user.js" title="Needs Tampermonkey or Violentmonkey. Skip if already installed for the Twitch app.">Install userscript</a></div>
+    <p class="help">Settings folder: <code id="dataDir"></code> · <span id="version"></span></p>
   </section>
 
   <section class="card">
@@ -90,6 +92,7 @@
     const s = await fetch('/api/status').then((r) => r.json()).catch(() => null);
     if (!s) return;
     $('master').checked = s.enabled;
+    $('dataDir').textContent = s.dataDir; $('version').textContent = 'v' + s.version;
     const l = s.lovense;
     $('sLovense').innerHTML = l.lastError ? dot(false, l.lastError) : l.lastOk ? dot(true, 'OK') : dot(false, 'not tested yet: click Find toys');
     $('sGame').innerHTML = dot(s.gameClients > 0, s.gameClients ? `connected${s.lastGameEvent ? ' · last: ' + s.lastGameEvent : ''}` : 'waiting for game tab');

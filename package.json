@@ -9,7 +9,8 @@
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test test/userscript.test.mjs test/triggers.test.mjs"
+    "test": "node --import tsx --test test/userscript.test.mjs test/triggers.test.mjs",
+    "package": "node scripts/package.mjs"
   },
   "engines": {
     "node": ">=20"
@@ -20,7 +21,14 @@
   "devDependencies": {
     "@types/node": "^26.6.6",
     "@types/ws": "^8.18.2",
+    "esbuild": "^0.28.2",
+    "postject": "^1.0.0-alpha.6",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"
+  },
+  "exeName": "MahjongSoul-Lovense",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BrooklynVRC/Mahjong-Soul-Lovense-Integration"
   }
 }

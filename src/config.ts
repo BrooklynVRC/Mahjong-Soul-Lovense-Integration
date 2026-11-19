@@ -1,8 +1,10 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-export const ROOT = resolve(import.meta.dirname, '..');
-const CONFIG_PATH = resolve(ROOT, 'config.json');
+import { dataDir } from './runtime.js';
+
+export const DATA_DIR = dataDir('MahjongSoulLovense');
+const CONFIG_PATH = resolve(DATA_DIR, 'config.json');
 
 export type ActionType = 'vibrate' | 'preset' | 'pattern' | 'stop';
 export interface Action {
@@ -22,6 +24,7 @@ const rule = (enabled: boolean, action: Action) => ({ enabled, action });
 
 export const DEFAULT_CONFIG = {
   port: 7702,
+  openBrowserOnStart: true,
   enabled: true,
   lovense: {
     host: '127.0.0.1',
@@ -92,6 +95,7 @@ const ACTION_HINTS = {
 
 export const HINTS: Record<string, unknown> = {
   port: { help: 'Restart the app after changing. The userscript sends to 7702 by default.' },
+  openBrowserOnStart: { label: 'Open this page when the app starts' },
   enabled: { label: 'Master switch', help: 'Turn everything off without losing settings.' },
   lovense: { label: 'Lovense connection', help: 'Open Lovense Remote → Game Mode (or Lovense Connect) and copy the IP and port it shows.' },
   'lovense.https': { label: 'Use HTTPS', help: 'Needed when the app shows an HTTPS port (host looks like 192-168-1-5.lovense.club).' },

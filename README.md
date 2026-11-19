@@ -13,6 +13,18 @@ Makes a Lovense toy react to your Mahjong Soul games. It can also react to Twitc
 
 The Twitch part is kept separate on purpose. **This app never logs in to Twitch.** It only listens to the Twitch app's local event feed (`ws://localhost:7701/events`). You can run it with no Twitch app at all.
 
+## Quick start (no coding)
+
+1. Install [Tampermonkey](https://www.tampermonkey.net/) in your browser. On Chrome/Edge, open the extension's details and turn on **Allow User Scripts**.
+2. Download **MahjongSoul-Lovense.exe** from the [latest release](https://github.com/BrooklynVRC/Mahjong-Soul-Lovense-Integration/releases/latest) and double-click it.
+   Windows may warn that the app isn't signed. Click **More info → Run anyway**.
+3. The settings page opens in your browser. Click **Install userscript**. Skip this if you already installed it for the Twitch app.
+4. In Lovense Remote, turn on **Game Mode**, copy its IP and port into *Lovense connection*, click **Save settings**, then click **Find toys**.
+5. Optional: for Twitch viewer triggers, also run the Twitch app and turn on *Twitch triggers → Enabled*.
+6. Keep the app's window open while you play. Closing it stops the toy.
+
+Your settings are stored in `%APPDATA%\MahjongSoulLovense`. To update, download the new `.exe` and replace the old one; your settings are kept.
+
 ## How it works
 
 ```
@@ -26,7 +38,7 @@ The userscript is the same read-only one used by the Twitch app. It never sends 
 
 ## Setup
 
-1. **Install Node.js 20+**, then:
+1. **Start the app.** Either run the `.exe` from the latest release (see Quick start), or install Node.js 20+ and run it from source:
    ```powershell
    npm install
    npm start
@@ -68,6 +80,9 @@ Settings are saved to `config.json` (git-ignored).
 npm run dev
 npm run typecheck
 npm test     # decoder + trigger mapping + safety clamp tests
+npm run package    # build release/*.exe (standalone, no Node needed)
 ```
+
+**Making a release:** bump `version` in package.json, commit, then push a tag such as `v1.0.1`. GitHub Actions builds the .exe and publishes the release automatically.
 
 MIT licensed.

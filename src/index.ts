@@ -1,8 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { WebSocketServer, WebSocket } from 'ws';
-import { HINTS, ROOT, loadConfig, saveConfig, type Config, type GameKey } from './config.js';
+import { DATA_DIR, HINTS, loadConfig, saveConfig, type Config, type GameKey } from './config.js';
+import { USERSCRIPT, VERSION, openBrowser, pauseIfPackaged, readAsset } from './runtime.js';
 import { Lovense } from './lovense.js';
 import { forGame, forTwitch } from './triggers.js';
 
@@ -66,13 +65,12 @@ function syncTwitch() {
 }
 
 // ---------------- HTTP ----------------
-const PUBLIC = resolve(ROOT, 'public');
 function send(res: ServerResponse, code: number, body: unknown, type = 'application/json') {
   res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-store' });
   res.end(typeof body === 'string' ? body : JSON.stringify(body));
 }
 function file(res: ServerResponse, name: string, type: string) {
-  try { send(res, 200, readFileSync(resolve(PUBLIC, name), 'utf8'), type); } catch { send(res, 404, 'not found', 'text/plain'); }
+  try { send(res, 200, readAsset(name), type); } catch { send(res, 404, 'not found', 'text/plain'); }
 }
 async function body(req: IncomingMessage): Promise<any> {
   let data = '';
@@ -88,12 +86,14 @@ const server = createServer(async (req, res) => {
     switch (`${req.method} ${url.pathname}`) {
       case 'GET /': return file(res, 'settings.html', 'text/html; charset=utf-8');
       case 'GET /ui.js': return file(res, 'ui.js', 'text/javascript; charset=utf-8');
+      case `GET /${USERSCRIPT}`: return file(res, USERSCRIPT, 'text/javascript; charset=utf-8');
       case 'GET /api/config': return send(res, 200, { config, hints: HINTS });
       case 'POST /api/config':
         config = saveConfig(await body(req));
         syncTwitch();
         return send(res, 200, { ok: true, config });
       case 'GET /api/status': return send(res, 200, {
+        version: VERSION, dataDir: DATA_DIR,
         enabled: config.enabled,
         lovense: { lastError: toy.lastError, lastOk: toy.lastOk, busy: toy.busy, queue: toy.queueLength },
         gameClients: gameIn.clients.size, lastGameEvent,
@@ -130,13 +130,28 @@ server.on('upgrade', (req, socket, head) => {
   gameIn.handleUpgrade(req, socket, head, (ws) => gameIn.emit('connection', ws, req));
 });
 
+const home = `http://localhost:${config.port}/`;
+server.on('error', async (e: NodeJS.ErrnoException) => {
+  if (e.code === 'EADDRINUSE') {
+    console.log(`Port ${config.port} is already in use. The app is probably already running, so opening ${home}`);
+    openBrowser(home);
+  } else console.error('Server error:', e);
+  await pauseIfPackaged();
+  process.exit(1);
+});
+
 server.listen(config.port, '127.0.0.1', () => {
-  console.log('Mahjong Soul × Lovense running');
-  console.log(`  Settings: http://localhost:${config.port}/`);
+  console.log(`Mahjong Soul × Lovense ${VERSION}  (keep this window open while playing)`);
+  console.log(`  Settings: ${home}`);
+  console.log(`  Data:     ${DATA_DIR}`);
+  if (config.openBrowserOnStart) openBrowser(home);
   syncTwitch();
 });
 
-// Stop the toy if the app is closed.
-for (const sig of ['SIGINT', 'SIGTERM'] as const) {
+process.on('uncaughtException', (e) => console.error('[error]', e));
+process.on('unhandledRejection', (e) => console.error('[error]', e));
+
+// Stop the toy if the app is closed (SIGHUP/SIGBREAK = console window closed on Windows).
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK'] as const) {
   process.on(sig, async () => { await toy.stopAll('app closing').catch(() => {}); process.exit(0); });
 }
