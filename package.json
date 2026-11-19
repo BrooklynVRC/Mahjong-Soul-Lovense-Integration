@@ -1,6 +1,6 @@
 {
   "name": "mahjong-soul-lovense",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "Lovense integration for Mahjong Soul (Steam client): reads the game from the screen and makes your toy react, plus optional Twitch viewer triggers.",
   "type": "module",
   "private": true,
@@ -10,7 +10,7 @@
     "dev": "tsx watch src/index.ts",
     "build:host": "dotnet build host/MahjongSoulHost.csproj -c Release -nologo -v q",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test test/screen.test.mjs test/triggers.test.mjs",
+    "test": "node --import tsx --test test/screen.test.mjs test/triggers.test.mjs test/intiface.test.mjs",
     "package": "node scripts/package.mjs"
   },
   "engines": {

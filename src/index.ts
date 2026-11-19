@@ -116,7 +116,7 @@ const server = createServer(async (req, res) => {
       case 'GET /api/status': return send(res, 200, {
         version: VERSION, dataDir: DATA_DIR,
         enabled: config.enabled,
-        lovense: { lastError: toy.lastError, lastOk: toy.lastOk, busy: toy.busy, queue: toy.queueLength },
+        lovense: { lastError: toy.lastError, lastOk: toy.lastOk, busy: toy.busy, queue: toy.queueLength, output: config.output, status: toy.connectionStatus, ok: toy.connectionOk },
         screen: reader.summary(), lastGameEvent,
         twitch: twitchStatus,
         log: toy.log.slice(0, 25),
@@ -166,6 +166,8 @@ server.listen(config.port, '127.0.0.1', () => {
   showUi(home, config.openBrowserOnStart);
   reader.start();
   syncTwitch();
+  toy.sync();
+  setInterval(() => toy.sync(), 3000);
 });
 
 process.on('uncaughtException', (e) => console.error('[error]', e));

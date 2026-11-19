@@ -22,7 +22,9 @@ The screen reader gets the game's picture the same way **OBS Window Capture and 
 
 1. Download **MahjongSoul-Lovense.exe** from the [latest release](https://github.com/BrooklynVRC/Mahjong-Soul-Lovense-Integration/releases/latest) and double-click it. It opens in its own window; there's nothing else to install.
    Windows may warn that the app isn't signed. Click **More info → Run anyway**.
-2. **Lovense**: in Lovense Remote, connect your toy and turn on **Game Mode**. Lovense Connect also works.
+2. **Connect your toy**, either way:
+   - **Intiface Central** (Lovense and many other brands, Bluetooth on this PC): install [Intiface Central](https://intiface.com/central/), press **Start Server**, and connect your toy on its Devices tab. In this app set *How to reach your toy* to **Intiface Central** and save. That's it.
+   - **Lovense Remote**: in Lovense Remote, connect your toy and turn on **Game Mode**. Lovense Connect also works.
    - Copy the IP and port it shows into *Lovense connection* and save, then click **Find toys**.
    - For an HTTPS port, the host looks like `192-168-1-5.lovense.club`; turn *Use HTTPS* on.
 3. **Screen reader**: nothing to do in most cases. The app ships with a built-in calibration and updates it online, and calibration is shared with the Twitch app. See the [calibration guide](https://github.com/BrooklynVRC/Mahjong-Soul-Twitch-Integration#calibration-done-once-for-everyone) if you want to teach it yourself.
@@ -44,6 +46,7 @@ Settings are in `%APPDATA%\MahjongSoulLovense`. Screen templates are in `%APPDAT
 
 ## Troubleshooting
 
+- **Intiface says "not reachable"**: make sure Intiface Central is open and **Start Server** is pressed. The address must match Intiface → Settings → Server (default `ws://127.0.0.1:12345`). "0 toys" means no toy is connected in Intiface's Devices tab yet.
 - **Lovense errors or timeouts**:
   - The PC and phone must be on the same network.
   - Game Mode must be on, and the port must match the one shown in Lovense Remote.

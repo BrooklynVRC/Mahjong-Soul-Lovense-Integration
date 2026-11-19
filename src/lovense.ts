@@ -1,5 +1,6 @@
 // Talks to the Lovense Remote "Game Mode" / Lovense Connect local API and schedules actions.
 import type { Action, Config } from './config.js';
+import { Intiface } from './intiface.js';
 
 const PATTERN_LETTER: Record<string, string> = {
   Vibrate: 'v', Rotate: 'r', Pump: 'p', Thrusting: 't', Fingering: 'f', Suction: 's', Depth: 'd', Oscillate: 'o', All: '',
@@ -17,7 +18,15 @@ export class Lovense {
   private timer: NodeJS.Timeout | null = null;
   private busyUntil = 0;
 
-  constructor(private getConfig: () => Config) {}
+  readonly intiface: Intiface;
+  constructor(private getConfig: () => Config) {
+    this.intiface = new Intiface(() => this.getConfig().intiface);
+  }
+  get usingIntiface() { return this.getConfig().output === 'intiface'; }
+  /** Keeps the Intiface connection matching the settings (call often). */
+  sync() { this.intiface.ensure(this.usingIntiface); }
+  get connectionStatus() { return this.usingIntiface ? this.intiface.status : this.lastError || (this.lastOk ? 'OK' : 'not tested yet'); }
+  get connectionOk() { return this.usingIntiface ? this.intiface.status.startsWith('connected') && this.intiface.devices.length > 0 : !!this.lastOk && !this.lastError; }
 
   private get url() {
     const l = this.getConfig().lovense;
@@ -45,6 +54,7 @@ export class Lovense {
   }
 
   async getToys(): Promise<{ id: string; name: string; nickName?: string; battery?: number; status?: unknown }[]> {
+    if (this.usingIntiface) { this.sync(); return (await this.intiface.refresh()).map((d) => ({ id: String(d.index), name: d.name })); }
     const r = await this.command({ command: 'GetToys' });
     let toys = r?.data?.toys ?? {};
     if (typeof toys === 'string') { try { toys = JSON.parse(toys); } catch { toys = {}; } }
@@ -90,7 +100,12 @@ export class Lovense {
     this.busyUntil = Date.now() + seconds * 1000;
     this.timer = setTimeout(() => this.next(), seconds * 1000);
     try {
-      await this.command(body);
+      if (this.usingIntiface) {
+        this.sync();
+        const strength = Math.round(Number(String(body.action ?? '').split(':')[1] ?? action.strength)) || clampStrength(action.strength, this.getConfig().safety.maxStrength);
+        const steps = typeof body.strength === 'string' ? (body.strength as string).split(';').map(Number) : null;
+        await this.intiface.play(action, strength, seconds, steps);
+      } else await this.command(body);
       this.record(label, `${body.command} ${body.action ?? body.name ?? body.strength} for ${seconds}s`, true);
     } catch (e) {
       this.record(label, `failed: ${(e as Error).message}`, false);
@@ -107,7 +122,7 @@ export class Lovense {
     this.queue = [];
     if (this.timer) clearTimeout(this.timer);
     this.timer = null; this.busyUntil = 0;
-    try { await this.command({ command: 'Function', action: 'Stop', timeSec: 0, apiVer: 1 }); this.record(label, 'stopped, queue cleared', true); }
+    try { if (this.usingIntiface) await this.intiface.stop(); else await this.command({ command: 'Function', action: 'Stop', timeSec: 0, apiVer: 1 }); this.record(label, 'stopped, queue cleared', true); }
     catch (e) { this.record(label, `stop failed: ${(e as Error).message}`, false); }
   }
 
@@ -120,3 +135,5 @@ export class Lovense {
     console.log(`[lovense] ${label}: ${detail}`);
   }
 }
+
+function clampStrength(s: number, max: number) { return Math.max(0, Math.min(20, Math.min(max, Math.round(Number(s) || 0)))); }

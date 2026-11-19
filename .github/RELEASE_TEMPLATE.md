@@ -7,7 +7,11 @@
 - Closing the window stops the toy.
 
 ### First run
-1. In Lovense Remote turn on **Game Mode**, copy its IP and port into *Lovense connection*, save, and click **Find toys**.
+1. Connect your toy, either way:
+   - **Intiface Central** (many brands): press Start Server and connect the toy there, then choose *Intiface Central* in the app.
+   - **Lovense Remote**: turn on Game Mode and copy its IP and port into the app.
+
+   The **Getting started** list in the app walks you through it.
 2. Open **Screen reader & calibration** and teach it the banners and the four score boxes. If you already did this in the Twitch app, it's done: templates are shared.
 3. Optional: Twitch viewer triggers need [Mahjong Soul Twitch Integration](https://github.com/BrooklynVRC/Mahjong-Soul-Twitch-Integration/releases/latest) running too.
 
